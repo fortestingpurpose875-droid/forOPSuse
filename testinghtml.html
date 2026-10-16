@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MC Attendance Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 850px;
+      margin: 30px auto;
+      padding: 20px;
+      background: #f5f7fa;
+      color: #222;
+    }
+
+    h1 { font-size: 26px; }
+
+    .field { margin: 20px 0; }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    textarea {
+      width: 100%;
+      box-sizing: border-box;
+      min-height: 110px;
+      padding: 12px;
+      border: 1px solid #bbb;
+      border-radius: 6px;
+      font: 14px monospace;
+      resize: vertical;
+    }
+
+    #attendance { min-height: 200px; }
+
+    button {
+      padding: 11px 18px;
+      border: 0;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 15px;
+      margin: 5px 5px 5px 0;
+    }
+
+    .primary {
+      background: #1769d2;
+      color: white;
+    }
+
+    .secondary {
+      background: #e1e7ef;
+      color: #222;
+    }
+
+    #status { margin: 14px 0; }
+
+    #result {
+      min-height: 130px;
+      background: white;
+    }
+
+    .hint {
+      font-size: 13px;
+      color: #555;
+      margin-top: 6px;
+    }
+  </style>
+</head>
+<body>
+  <h1>MC Attendance Generator</h1>
+  <p>Enter your names, dates and attendance data to generate an MC list.</p>
+
+  <div class="field">
+    <label for="names">1. Names (one name per line)</label>
+    <textarea id="names" placeholder="Ferdinand&#10;John&#10;Mary"></textarea>
+  </div>
+
+  <div class="field">
+    <label for="dates">2. Dates (separated by commas or new lines)</label>
+    <textarea id="dates" placeholder="1, 2, 3, 4, 5"></textarea>
+    <div class="hint">
+      Enter dates in the same order as the attendance columns.
+    </div>
+  </div>
+
+  <div class="field">
+    <label for="attendance">3. Attendance data</label>
+    <textarea id="attendance"
+      placeholder="MC&#9;MC&#9;MC&#9;&#10;&#9;MC&#9;&#9;&#10;MC&#9;&#9;MC"></textarea>
+    <div class="hint">
+      Copy and paste the attendance cells from Excel.
+      Each row must correspond to a name, and each column to a date.
+    </div>
+  </div>
+
+  <button class="primary" onclick="generateResults()">
+    Generate MC list
+  </button>
+  <button class="secondary" onclick="copyResults()">
+    Copy result
+  </button>
+  <button class="secondary" onclick="clearAll()">
+    Clear all
+  </button>
+
+  <p id="status" role="status" aria-live="polite"></p>
+
+  <div class="field">
+    <label for="result">4. Result</label>
+    <textarea id="result" readonly
+      placeholder="Your MC list will appear here..."></textarea>
+  </div>
+
+  <script>
+    function splitLines(value) {
+      return value
+        .replace(/\r\n?/g, "\n")
+        .split("\n");
+    }
+
+    function splitDates(value) {
+      return value
+        .trim()
+        .split(/[\n,]+/)
+        .map(date => date.trim())
+        .filter(Boolean);
+    }
+
+    function generateResults() {
+      const names = splitLines(
+        document.getElementById("names").value
+      ).map(name => name.trim());
+
+      const dates = splitDates(
+        document.getElementById("dates").value
+      );
+
+      const attendanceText =
+        document.getElementById("attendance").value
+          .replace(/\r\n?/g, "\n")
+          .trim();
+
+      const resultBox = document.getElementById("result");
+      const status = document.getElementById("status");
+
+      resultBox.value = "";
+      status.textContent = "";
+
+      if (!names.length || names.some(name => !name)) {
+        status.textContent =
+          "Please enter a name on every line.";
+        return;
+      }
+
+      if (!dates.length) {
+        status.textContent = "Please enter at least one date.";
+        return;
+      }
+
+      if (!attendanceText) {
+        status.textContent = "Please enter attendance data.";
+        return;
+      }
+
+      const rows = splitLines(attendanceText).map(row =>
+        row.split("\t")
+      );
+
+      if (rows.length !== names.length) {
+        status.textContent =
+          `Mismatch: ${names.length} names but ` +
+          `${rows.length} attendance rows.`;
+        return;
+      }
+
+      const wrongRow = rows.findIndex(
+        row => row.length !== dates.length
+      );
+
+      if (wrongRow !== -1) {
+        status.textContent =
+          `Row ${wrongRow + 1} has ${rows[wrongRow].length} ` +
+          `columns; expected ${dates.length}. ` +
+          "Copy the full attendance grid, including empty cells.";
+        return;
+      }
+
+      const output = [];
+
+      names.forEach((name, rowIndex) => {
+        const mcDates = dates.filter((date, colIndex) => {
+          const cell = rows[rowIndex][colIndex] ?? "";
+          return cell.trim().toUpperCase() === "MC";
+        });
+
+        if (mcDates.length > 0) {
+          output.push(`${name}: ${mcDates.join(",")}`);
+        }
+      });
+
+      resultBox.value = output.join("\n");
+
+      status.textContent = output.length
+        ? `Done! Found MC records for ${output.length} people.`
+        : "No MC records found.";
+    }
+
+    async function copyResults() {
+      const result = document.getElementById("result").value;
+      const status = document.getElementById("status");
+
+      if (!result) {
+        status.textContent = "Generate a result first.";
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(result);
+        status.textContent = "Result copied to clipboard.";
+      } catch {
+        const box = document.getElementById("result");
+        box.focus();
+        box.select();
+        status.textContent =
+          "Select and copy the result manually.";
+      }
+    }
+
+    function clearAll() {
+      ["names", "dates", "attendance", "result"].forEach(id => {
+        document.getElementById(id).value = "";
+      });
+      document.getElementById("status").textContent = "";
+    }
+  </script>
+</body>
+</html>
