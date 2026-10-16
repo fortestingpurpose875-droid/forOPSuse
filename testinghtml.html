@@ -3,239 +3,244 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MC Attendance Generator</title>
+  <title>MC Formula Generator</title>
   <style>
+    * { box-sizing: border-box; }
     body {
-      font-family: Arial, sans-serif;
-      max-width: 850px;
-      margin: 30px auto;
-      padding: 20px;
-      background: #f5f7fa;
-      color: #222;
+      margin: 0; min-height: 100vh; padding: 28px 16px;
+      font-family: Arial, sans-serif; color: #1d2733;
+      background: #eef2f7; display: flex; justify-content: center; align-items: flex-start;
     }
 
-    h1 { font-size: 26px; }
-
-    .field { margin: 20px 0; }
-
-    label {
-      display: block;
-      font-weight: bold;
-      margin-bottom: 8px;
+    /* ===== One neat box ===== */
+    .card {
+      width: 100%; max-width: 720px; background: #fff; border-radius: 12px;
+      box-shadow: 0 4px 18px rgba(15, 40, 80, .12); overflow: hidden;
     }
-
-    textarea {
-      width: 100%;
-      box-sizing: border-box;
-      min-height: 110px;
-      padding: 12px;
-      border: 1px solid #bbb;
-      border-radius: 6px;
-      font: 14px monospace;
-      resize: vertical;
+    .card-head {
+      padding: 16px 20px; color: #fff;
+      background: linear-gradient(135deg, #0f4c9c 0%, #1769d2 60%, #3a8dee 100%);
     }
+    .card-head h1 { margin: 0; font-size: 19px; }
+    .card-head p { margin: 3px 0 0; font-size: 12.5px; opacity: .9; }
 
-    #attendance { min-height: 200px; }
+    .card-body { padding: 18px 20px 20px; }
 
-    button {
-      padding: 11px 18px;
-      border: 0;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 15px;
-      margin: 5px 5px 5px 0;
+    .inputs { display: grid; grid-template-columns: 1fr 1fr 1fr 80px; gap: 12px; }
+    @media (max-width: 560px) { .inputs { grid-template-columns: 1fr 1fr; } }
+
+    .box label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #33475b; }
+    .box label span { font-weight: normal; color: #7a8b9c; }
+
+    input[type="text"] {
+      width: 100%; padding: 9px 10px; border: 1.5px solid #cfd8e3; border-radius: 6px;
+      font: 14px monospace; text-transform: uppercase; color: #1d2733; background: #fafcfe;
     }
+    input[type="text"]:focus { outline: none; border-color: #1769d2; background: #fff; }
+    input[type="text"].bad { border-color: #d93025; background: #fff5f4; }
 
-    .primary {
-      background: #1769d2;
-      color: white;
-    }
+    .bar { display: flex; align-items: center; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+    button { padding: 8px 15px; border: 0; border-radius: 6px; cursor: pointer; font-size: 13px; }
+    .primary { background: #1769d2; color: #fff; font-weight: bold; }
+    .primary:hover { background: #0f4c9c; }
+    .ghost { background: #e8eef6; color: #1d2733; }
+    .ghost:hover { background: #d9e2ee; }
 
-    .secondary {
-      background: #e1e7ef;
-      color: #222;
-    }
+    #status { font-size: 13px; font-weight: bold; }
+    #status.error { color: #d93025; }
+    #status.ok { color: #1e8e3e; }
+    #status.warn { color: #b06000; }
 
-    #status { margin: 14px 0; }
+    .divider { height: 1px; background: #e3e9f0; margin: 18px 0 14px; }
+
+    .out-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .out-head label { font-size: 12px; font-weight: bold; color: #33475b; }
 
     #result {
-      min-height: 130px;
-      background: white;
+      width: 100%; height: 300px; padding: 12px; border: 1.5px solid #cfd8e3; border-radius: 6px;
+      background: #f6f9fc; font: 12.5px/1.45 monospace; white-space: pre; overflow: auto; resize: vertical;
     }
-
-    .hint {
-      font-size: 13px;
-      color: #555;
-      margin-top: 6px;
-    }
+    .hint { font-size: 12px; color: #7a8b9c; margin-top: 8px; }
   </style>
 </head>
 <body>
-  <h1>MC Attendance Generator</h1>
-  <p>Enter your names, dates and attendance data to generate an MC list.</p>
 
-  <div class="field">
-    <label for="names">1. Names (one name per line)</label>
-    <textarea id="names" placeholder="Ferdinand&#10;John&#10;Mary"></textarea>
-  </div>
-
-  <div class="field">
-    <label for="dates">2. Dates (separated by commas or new lines)</label>
-    <textarea id="dates" placeholder="1, 2, 3, 4, 5"></textarea>
-    <div class="hint">
-      Enter dates in the same order as the attendance columns.
+  <div class="card">
+    <div class="card-head">
+      <h1>MC Formula Generator</h1>
+      <p>Type your cell ranges, get an Excel formula that lists who took MC and when.</p>
     </div>
-  </div>
 
-  <div class="field">
-    <label for="attendance">3. Attendance data</label>
-    <textarea id="attendance"
-      placeholder="MC&#9;MC&#9;MC&#9;&#10;&#9;MC&#9;&#9;&#10;MC&#9;&#9;MC"></textarea>
-    <div class="hint">
-      Copy and paste the attendance cells from Excel.
-      Each row must correspond to a name, and each column to a date.
+    <div class="card-body">
+      <div class="inputs">
+        <div class="box">
+          <label for="names">Names <span>(column)</span></label>
+          <input type="text" id="names" value="C4:C38" placeholder="C4:C38" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="box">
+          <label for="dates">Dates <span>(row)</span></label>
+          <input type="text" id="dates" value="D2:S2" placeholder="D2:S2" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="box">
+          <label for="data">Attendance <span>(block)</span></label>
+          <input type="text" id="data" value="D4:S38" placeholder="D4:S38" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="box">
+          <label for="code">Code</label>
+          <input type="text" id="code" value="MC" placeholder="MC" autocomplete="off" spellcheck="false">
+        </div>
+      </div>
+
+      <div class="bar">
+        <button class="primary" onclick="generateFormula()">Generate</button>
+        <button class="ghost" onclick="resetAll()">Reset</button>
+        <span id="status" role="status" aria-live="polite"></span>
+      </div>
+
+      <div class="divider"></div>
+
+      <div class="out-head">
+        <label for="result">Excel formula</label>
+        <button class="ghost" onclick="copyFormula()">Copy</button>
+      </div>
+      <textarea id="result" readonly placeholder="Your formula will appear here..."></textarea>
+      <div class="hint">Paste into an empty Excel cell. Needs Excel 365 / 2021 or newer.</div>
     </div>
-  </div>
-
-  <button class="primary" onclick="generateResults()">
-    Generate MC list
-  </button>
-  <button class="secondary" onclick="copyResults()">
-    Copy result
-  </button>
-  <button class="secondary" onclick="clearAll()">
-    Clear all
-  </button>
-
-  <p id="status" role="status" aria-live="polite"></p>
-
-  <div class="field">
-    <label for="result">4. Result</label>
-    <textarea id="result" readonly
-      placeholder="Your MC list will appear here..."></textarea>
   </div>
 
   <script>
-    function splitLines(value) {
-      return value
-        .replace(/\r\n?/g, "\n")
-        .split("\n");
+    const DEFAULTS = { names: "C4:C38", dates: "D2:S2", data: "D4:S38", code: "MC" };
+
+    function setStatus(message, type) {
+      const s = document.getElementById("status");
+      s.textContent = message;
+      s.className = type || "";
     }
 
-    function splitDates(value) {
-      return value
-        .trim()
-        .split(/[\n,]+/)
-        .map(date => date.trim())
-        .filter(Boolean);
+    function colToNum(letters) {
+      let n = 0;
+      for (const ch of letters) n = n * 26 + (ch.charCodeAt(0) - 64);
+      return n;
     }
 
-    function generateResults() {
-      const names = splitLines(
-        document.getElementById("names").value
-      ).map(name => name.trim());
-
-      const dates = splitDates(
-        document.getElementById("dates").value
-      );
-
-      const attendanceText =
-        document.getElementById("attendance").value
-          .replace(/\r\n?/g, "\n")
-          .trim();
-
-      const resultBox = document.getElementById("result");
-      const status = document.getElementById("status");
-
-      resultBox.value = "";
-      status.textContent = "";
-
-      if (!names.length || names.some(name => !name)) {
-        status.textContent =
-          "Please enter a name on every line.";
-        return;
-      }
-
-      if (!dates.length) {
-        status.textContent = "Please enter at least one date.";
-        return;
-      }
-
-      if (!attendanceText) {
-        status.textContent = "Please enter attendance data.";
-        return;
-      }
-
-      const rows = splitLines(attendanceText).map(row =>
-        row.split("\t")
-      );
-
-      if (rows.length !== names.length) {
-        status.textContent =
-          `Mismatch: ${names.length} names but ` +
-          `${rows.length} attendance rows.`;
-        return;
-      }
-
-      const wrongRow = rows.findIndex(
-        row => row.length !== dates.length
-      );
-
-      if (wrongRow !== -1) {
-        status.textContent =
-          `Row ${wrongRow + 1} has ${rows[wrongRow].length} ` +
-          `columns; expected ${dates.length}. ` +
-          "Copy the full attendance grid, including empty cells.";
-        return;
-      }
-
-      const output = [];
-
-      names.forEach((name, rowIndex) => {
-        const mcDates = dates.filter((date, colIndex) => {
-          const cell = rows[rowIndex][colIndex] ?? "";
-          return cell.trim().toUpperCase() === "MC";
-        });
-
-        if (mcDates.length > 0) {
-          output.push(`${name}: ${mcDates.join(",")}`);
-        }
-      });
-
-      resultBox.value = output.join("\n");
-
-      status.textContent = output.length
-        ? `Done! Found MC records for ${output.length} people.`
-        : "No MC records found.";
+    function numToCol(n) {
+      let s = "";
+      while (n > 0) { const r = (n - 1) % 26; s = String.fromCharCode(65 + r) + s; n = Math.floor((n - 1) / 26); }
+      return s;
     }
 
-    async function copyResults() {
-      const result = document.getElementById("result").value;
-      const status = document.getElementById("status");
+    // "C4:C38" or "$C$4:$C$38" -> {text, c1, r1, c2, r2}
+    function parseRange(value) {
+      const text = value.trim().toUpperCase().replace(/\s+/g, "");
+      const m = text.match(/^(\$?[A-Z]{1,3}\$?\d+):(\$?[A-Z]{1,3}\$?\d+)$/);
+      if (!m) return null;
+      const cell = ref => {
+        const p = ref.replace(/\$/g, "").match(/^([A-Z]+)(\d+)$/);
+        return { c: colToNum(p[1]), r: parseInt(p[2], 10) };
+      };
+      const a = cell(m[1]), b = cell(m[2]);
+      return {
+        text,
+        c1: Math.min(a.c, b.c), c2: Math.max(a.c, b.c),
+        r1: Math.min(a.r, b.r), r2: Math.max(a.r, b.r)
+      };
+    }
 
-      if (!result) {
-        status.textContent = "Generate a result first.";
-        return;
+    function mark(id, bad) { document.getElementById(id).classList.toggle("bad", bad); }
+
+    function generateFormula() {
+      const result = document.getElementById("result");
+      result.value = "";
+      setStatus("");
+      ["names", "dates", "data"].forEach(id => mark(id, false));
+
+      const names = parseRange(document.getElementById("names").value);
+      const dates = parseRange(document.getElementById("dates").value);
+      let data    = parseRange(document.getElementById("data").value);
+      const code  = document.getElementById("code").value.trim().toUpperCase();
+
+      if (!names) { mark("names", true); return setStatus("Names: enter a range like C4:C38.", "error"); }
+      if (!dates) { mark("dates", true); return setStatus("Dates: enter a range like D2:S2.", "error"); }
+      if (!data)  { mark("data", true);  return setStatus("Attendance: enter a range like D4:S38.", "error"); }
+      if (!code)  { return setStatus("Enter the code to find, e.g. MC.", "error"); }
+      if (code.includes('"')) { return setStatus("The code cannot contain a double quote.", "error"); }
+
+      if (names.c1 !== names.c2) {
+        mark("names", true);
+        return setStatus("Names must be a single column (e.g. C4:C38).", "error");
+      }
+      if (dates.r1 !== dates.r2) {
+        mark("dates", true);
+        return setStatus("Dates must be a single row (e.g. D2:S2).", "error");
       }
 
+      const nameCount = names.r2 - names.r1 + 1;
+      const dateCount = dates.c2 - dates.c1 + 1;
+      const dataRows  = data.r2 - data.r1 + 1;
+      const dataCols  = data.c2 - data.c1 + 1;
+
+      // If attendance doesn't match names x dates, keep its start cell and resize it to fit.
+      let fixed = false;
+      if (dataRows !== nameCount || dataCols !== dateCount) {
+        const text = `${numToCol(data.c1)}${data.r1}:${numToCol(data.c1 + dateCount - 1)}${data.r1 + nameCount - 1}`;
+        data = { text, c1: data.c1, r1: data.r1, c2: data.c1 + dateCount - 1, r2: data.r1 + nameCount - 1 };
+        document.getElementById("data").value = text;
+        fixed = true;
+      }
+
+      result.value =
+`=LET(
+ names,${names.text},
+ dates,${dates.text},
+ data,${data.text},
+ TEXTJOIN(CHAR(10),TRUE,
+  MAP(SEQUENCE(ROWS(names)),LAMBDA(r,
+   IFERROR(
+    INDEX(names,r)&": "&
+    TEXTJOIN(",",TRUE,
+     FILTER(dates,INDEX(data,r,0)="${code}")
+    ),
+    ""
+   )
+  ))
+ )
+)`;
+
+      if (fixed) {
+        setStatus(`Attendance didn't match names x dates, so it was adjusted to ${data.text}.`, "warn");
+      } else if (names.r1 !== data.r1 || dates.c1 !== data.c1) {
+        setStatus("Formula ready. Check: names/dates don't start on the same row/column as the attendance block.", "warn");
+      } else {
+        setStatus(`Ready: ${nameCount} names x ${dateCount} dates.`, "ok");
+      }
+    }
+
+    async function copyFormula() {
+      const box = document.getElementById("result");
+      if (!box.value) return setStatus("Generate a formula first.", "error");
       try {
-        await navigator.clipboard.writeText(result);
-        status.textContent = "Result copied to clipboard.";
+        await navigator.clipboard.writeText(box.value);
+        setStatus("Copied. Paste it into an Excel cell.", "ok");
       } catch {
-        const box = document.getElementById("result");
-        box.focus();
-        box.select();
-        status.textContent =
-          "Select and copy the result manually.";
+        box.focus(); box.select();
+        setStatus("Select and copy the formula manually.", "error");
       }
     }
 
-    function clearAll() {
-      ["names", "dates", "attendance", "result"].forEach(id => {
-        document.getElementById(id).value = "";
-      });
-      document.getElementById("status").textContent = "";
+    function resetAll() {
+      for (const id of Object.keys(DEFAULTS)) {
+        document.getElementById(id).value = DEFAULTS[id];
+        mark(id, false);
+      }
+      document.getElementById("result").value = "";
+      setStatus("");
     }
+
+    document.querySelectorAll("input[type=text]").forEach(el =>
+      el.addEventListener("keydown", e => { if (e.key === "Enter") generateFormula(); })
+    );
+
+    generateFormula();
   </script>
 </body>
 </html>
